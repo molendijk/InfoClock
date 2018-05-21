@@ -27,11 +27,15 @@ class WeatherGetter: public Tasks::Task
 			Weather(uint32_t locationId):
 				locationId(locationId),
 				temperature(0),
-				temperatureForecast(0) {}
+				temperatureForecast(0),
+				windSpeed(0),
+				windDirection(0) {}
 
 			uint32_t locationId;
 			float  temperature;
 			float  temperatureForecast;
+			float  windSpeed;
+			float  windDirection;
 			String description;
 			String location;
 

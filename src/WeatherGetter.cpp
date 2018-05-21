@@ -15,6 +15,8 @@
 #include "web_utils.h"
 #include <exception>
 
+#define WIND_ENABLED
+
 /*
  * 2660646 - Geneva
  * 2659667 - Meyrin
@@ -40,7 +42,9 @@ static const vector<String> prefixes{
 	"main/temp",
 	"name",
 	"list/1/main/temp",
-	"list/1/weather/0/description"
+	"list/1/weather/0/description",
+	"wind/speed",
+	"wind/deg"
 };
 
 bool jsonPathFilter(const string& key, const string& /*value*/)
@@ -132,8 +136,49 @@ int getHttpResponse(HTTPClient& httpClient, MapCollector& mc, const char* url)
 	return httpCode;
 }
 
-
-
+#ifdef WIND_ENABLED
+char* bearing(float direction)
+{
+	switch (round( direction / 22.5 ))
+	{
+		case 0: return (char *)" N";
+			break;
+		case 1: return (char *)" NNE";
+			break;
+		case 2: return (char *)" NE";
+			break;
+		case 3: return (char *)" ENE";
+			break;
+		case 4: return (char *)" E";
+			break;
+		case 5: return (char *)" ESE";
+			break;
+		case 6: return (char *)" SE";
+			break;
+		case 7: return (char *)" SSE";
+			break;
+		case 8: return (char *)" S";
+			break;
+		case 9: return (char *)" SSW";
+			break;
+		case 10: return (char *)" SW";
+			break;
+		case 11: return (char *)" WSW";
+			break;
+		case 12: return (char *)" W";
+			break;
+		case 13: return (char *)" WNW";
+			break;
+		case 14: return (char *)" NW";
+			break;
+		case 15: return (char *)" NNW";
+			break;
+		case 16: return (char *)" N";
+			break;
+		default: return (char *)" ?";
+	}
+}
+#endif /WIND_ENABLED
 
 
 
@@ -172,6 +217,8 @@ void WeatherGetter::run()
 		auto& results = mc.getValues();
 		w.temperature = atof(results["/root/main/temp"].c_str());
 		w.location = results["/root/name"].c_str();
+		w.windSpeed = atof(results["/root/wind/speed"].c_str())/3.6; //Convert km/h to m/s
+		w.windDirection = atoi(results["/root/wind/deg"].c_str());
 
 //		for (const auto& p: results)
 //		{
@@ -269,6 +316,8 @@ static const char owmStatusPage[] PROGMEM = R"_(
 <tr><td class="l">Temperature:</td><td>$t$ &#8451;</td></tr>
 <tr><td class="l">Temperature (forecast):</td><td>$tf$ &#8451;</td></tr>
 <tr><td class="l">Weather (forecast):</td><td>$df$</td></tr>
+<tr><td class="l">Wind Speed:</td><td>$ws$</td></tr>
+<tr><td class="l">Wind Direction:</td><td>$wd$</td></tr>
 )_";
 
 static const char owmFooterPage[] PROGMEM = R"_(
@@ -299,6 +348,8 @@ void WeatherGetter::handleStatus(ESP8266WebServer& webServer)
 				{F("t"), String(w.temperature)},
 				{F("tf"), String(w.temperatureForecast)},
 				{F("df"), w.description},
+				{F("ws"), String(w.windSpeed)},
+				{F("wd"), String(w.windDirection)}
 		};
 		macroStringReplace(owmStatusPageFS, mapLookup(m), ss);
 	}
@@ -333,7 +384,10 @@ String WeatherGetter::getWeatherDescription()
 		r += 'C';
 		r += ", ";
 		r += w.description;
-		r += ")";
+		r += ") wind: ";
+		r += String(w.windSpeed, 1);
+		r += " m/s ";
+		r += bearing(w.windDirection);
 		//		r += " ";
 		//		r += w.pressure;
 		//		r += " hPa";
