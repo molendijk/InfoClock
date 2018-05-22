@@ -217,7 +217,7 @@ void WeatherGetter::run()
 		auto& results = mc.getValues();
 		w.temperature = atof(results["/root/main/temp"].c_str());
 		w.location = results["/root/name"].c_str();
-		w.windSpeed = atof(results["/root/wind/speed"].c_str())/3.6; //Convert km/h to m/s
+		w.windSpeed = atof(results["/root/wind/speed"].c_str());
 		w.windDirection = atoi(results["/root/wind/deg"].c_str());
 
 //		for (const auto& p: results)
